@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Typing Exorcism — Face Tracking Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+
+  <!-- ============================================= -->
+  <!-- SETUP SCREEN: shown before camera is granted  -->
+  <!-- ============================================= -->
+  <div id="setup-screen" class="screen active">
+    <div class="setup-content">
+      <h1 class="setup-title">👁️ Face Tracking Prototype</h1>
+      <p class="setup-subtitle">Phase 1 — Camera &amp; Head Pitch Detection</p>
+      <p class="setup-description">
+        This prototype uses your webcam to detect when you look down at your keyboard.<br/>
+        Your video never leaves your browser.
+      </p>
+      <button id="btn-grant-camera" class="btn-primary">
+        <span class="btn-icon">📷</span> Grant Camera Access
+      </button>
+      <p id="camera-error" class="error-msg" hidden></p>
+    </div>
+  </div>
+
+  <!-- ============================================= -->
+  <!-- TRACKING SCREEN: live webcam + debug panel     -->
+  <!-- ============================================= -->
+  <div id="tracking-screen" class="screen">
+    <div class="tracking-layout">
+
+      <!-- Webcam feed -->
+      <div class="webcam-container">
+        <video id="webcam-video" autoplay playsinline muted></video>
+        <canvas id="landmark-canvas"></canvas>
+        <div id="gaze-status-badge" class="gaze-badge gaze-unknown">
+          Initializing…
+        </div>
+      </div>
+
+      <!-- Debug panel -->
+      <div class="debug-panel">
+        <h2 class="debug-title">🔍 Debug Panel</h2>
+
+        <div class="debug-section">
+          <h3>Detection Status</h3>
+          <div class="debug-row">
+            <span class="debug-label">Face Detected</span>
+            <span id="dbg-face-detected" class="debug-value">—</span>
+          </div>
+          <div class="debug-row">
+            <span class="debug-label">Looking Down</span>
+            <span id="dbg-looking-down" class="debug-value">—</span>
+          </div>
+          <div class="debug-row">
+            <span class="debug-label">Penalty Count</span>
+            <span id="dbg-penalty-count" class="debug-value">0</span>
+          </div>
+          <div class="debug-row">
+            <span class="debug-label">Eyes Closed</span>
+            <span id="dbg-eyes-closed" class="debug-value">—</span>
+          </div>
+        </div>
+
+        <div class="debug-section">
+          <h3>Head Pose (degrees)</h3>
+          <div class="debug-row">
+            <span class="debug-label">Pitch (up/down)</span>
+            <span id="dbg-pitch" class="debug-value">—</span>
+          </div>
+          <div class="debug-row">
+            <span class="debug-label">Yaw (left/right)</span>
+            <span id="dbg-yaw" class="debug-value">—</span>
+          </div>
+          <div class="debug-row">
+            <span class="debug-label">Roll (tilt)</span>
+            <span id="dbg-roll" class="debug-value">—</span>
+          </div>
+        </div>
+
+        <div class="debug-section">
+          <h3>Tuning Controls</h3>
+          <div class="slider-row">
+            <label for="slider-threshold">Pitch Threshold</label>
+            <input type="range" id="slider-threshold" min="5" max="40" value="15" step="1" />
+            <span id="slider-threshold-val" class="slider-val">15°</span>
+          </div>
+          <div class="slider-row">
+            <label for="slider-debounce">Debounce (ms)</label>
+            <input type="range" id="slider-debounce" min="0" max="1000" value="300" step="50" />
+            <span id="slider-debounce-val" class="slider-val">300ms</span>
+          </div>
+        </div>
+
+        <div class="debug-section">
+          <h3>Performance</h3>
+          <div class="debug-row">
+            <span class="debug-label">Detection FPS</span>
+            <span id="dbg-fps" class="debug-value">—</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
