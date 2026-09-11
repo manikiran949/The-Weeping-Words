@@ -26,10 +26,14 @@ const dbgLookingDown = document.getElementById('dbg-looking-down');
 const dbgPenaltyCount = document.getElementById('dbg-penalty-count');
 const dbgEyesClosed = document.getElementById('dbg-eyes-closed');
 const dbgEarValue = document.getElementById('dbg-ear-value');
+const dbgCalibration = document.getElementById('dbg-calibration');
+const dbgBaseline = document.getElementById('dbg-baseline');
 const dbgPitch = document.getElementById('dbg-pitch');
+const dbgDeviation = document.getElementById('dbg-deviation');
 const dbgYaw = document.getElementById('dbg-yaw');
 const dbgRoll = document.getElementById('dbg-roll');
 const dbgFps = document.getElementById('dbg-fps');
+const btnRecalibrate = document.getElementById('btn-recalibrate');
 
 // Sliders
 const sliderThreshold = document.getElementById('slider-threshold');
@@ -77,6 +81,10 @@ sliderEar.addEventListener('input', () => {
   sliderEarVal.textContent = val.toFixed(2);
 });
 
+btnRecalibrate.addEventListener('click', () => {
+  tracker.recalibrate();
+});
+
 // ─── Camera Grant Button ─────────────────────────────────────────
 
 btnGrantCamera.addEventListener('click', async () => {
@@ -118,8 +126,8 @@ function detectionLoop() {
   // Draw landmarks overlay
   tracker.drawLandmarks(landmarkCanvas);
 
-  // Play/stop alert sound based on gaze state
-  if (tracker.isLookingAway) {
+  // Play/stop alert sound based on gaze state (only after calibration)
+  if (tracker.isCalibrated && tracker.isLookingAway) {
     alert.play();
   } else {
     alert.stop();
@@ -175,9 +183,26 @@ function updateDebugPanel() {
     ? 'debug-value val-red'
     : 'debug-value val-green';
 
+  // Calibration status
+  if (tracker.isCalibrated) {
+    dbgCalibration.textContent = '✓ Done';
+    dbgCalibration.className = 'debug-value val-green';
+    dbgBaseline.textContent = `${tracker.baselinePitch.toFixed(1)}°`;
+  } else {
+    const pct = Math.round(tracker.calibrationProgress * 100);
+    dbgCalibration.textContent = `${pct}%`;
+    dbgCalibration.className = 'debug-value val-amber';
+    dbgBaseline.textContent = 'calibrating…';
+    dbgBaseline.className = 'debug-value val-amber';
+  }
+
   // Head pose values
   dbgPitch.textContent = `${tracker.pitch.toFixed(1)}°`;
-  dbgPitch.className = tracker.pitch > tracker.pitchThreshold
+
+  // Pitch deviation (the actual signal used for detection)
+  const dev = tracker.pitchDeviation;
+  dbgDeviation.textContent = `${dev.toFixed(1)}°`;
+  dbgDeviation.className = dev > tracker.pitchThreshold
     ? 'debug-value val-red'
     : 'debug-value';
 
@@ -200,6 +225,10 @@ function updateGazeBadge() {
   if (!tracker.hasFace) {
     gazeBadge.textContent = '⚠ No Face Detected';
     gazeBadge.classList.add('gaze-no-face');
+  } else if (!tracker.isCalibrated) {
+    const pct = Math.round(tracker.calibrationProgress * 100);
+    gazeBadge.textContent = `⏳ Calibrating… ${pct}%`;
+    gazeBadge.classList.add('gaze-unknown');
   } else if (tracker.isLookingDown && tracker.eyesClosed) {
     gazeBadge.textContent = '🔴 Looking Down + Eyes Closed!';
     gazeBadge.classList.add('gaze-down');

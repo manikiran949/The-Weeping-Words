@@ -357,6 +357,27 @@ html, body {
   text-align: right;
 }
 
+/* ---------- Buttons ---------- */
+.btn-secondary {
+  padding: 0.5rem 1.2rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--border-accent);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
 /* ---------- Animations ---------- */
 @keyframes fadeInUp {
   from {

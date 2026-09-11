@@ -55,8 +55,8 @@ export class FaceTracker {
   #eyesClosed = false;
 
   // --- Gaze state ---
-  /** @type {number} threshold in degrees — pitch above this = "looking down" */
-  pitchThreshold = 15;
+  /** @type {number} threshold in degrees — deviation from baseline to trigger */
+  pitchThreshold = 10;
   /** @type {number} debounce in ms — must sustain look-away this long */
   debounceMs = 300;
   /** @type {number} EAR threshold — below this = eyes closed */
@@ -64,6 +64,16 @@ export class FaceTracker {
 
   /** @type {number} raw average Eye Aspect Ratio */
   #earValue = 0;
+
+  // --- Calibration ---
+  /** @type {number[]} raw pitch samples collected during calibration */
+  #calibrationSamples = [];
+  /** @type {number} how many frames to collect for calibration */
+  #calibrationFrames = 60;
+  /** @type {boolean} whether calibration is complete */
+  #calibrated = false;
+  /** @type {number} the baseline pitch when looking at screen */
+  #baselinePitch = 0;
 
   /** @type {boolean} debounced output: is the player looking down? */
   #isLookingDown = false;
@@ -138,6 +148,20 @@ export class FaceTracker {
       this.#lastLandmarks = result.faceLandmarks;
       this.#computeHeadPose(landmarks);
       this.#computeEyeState(landmarks);
+
+      // --- Calibration phase ---
+      if (!this.#calibrated) {
+        this.#calibrationSamples.push(this.#pitch);
+        if (this.#calibrationSamples.length >= this.#calibrationFrames) {
+          // Average the samples to get baseline
+          const sum = this.#calibrationSamples.reduce((a, b) => a + b, 0);
+          this.#baselinePitch = sum / this.#calibrationSamples.length;
+          this.#calibrated = true;
+          console.log(`[FaceTracker] Calibrated! Baseline pitch: ${this.#baselinePitch.toFixed(1)}°`);
+        }
+        return; // Don't trigger penalties during calibration
+      }
+
       this.#updateGazeState(now);
     } else {
       this.#faceDetected = false;
@@ -174,14 +198,8 @@ export class FaceTracker {
     const dy = noseTip.y - forehead.y; // vertical separation
     const dz = noseTip.z - forehead.z; // depth difference
 
-    // atan2 of depth vs vertical gives us the pitch angle
-    // Positive = looking down, Negative = looking up
+    // atan2 of depth vs vertical gives us the raw pitch angle
     this.#pitch = Math.atan2(-dz, dy) * (180 / Math.PI);
-
-    // Normalize: when looking straight at camera, pitch ≈ 0
-    // The raw atan2 gives ~80-90° when looking straight because the nose
-    // naturally protrudes forward. We subtract this baseline.
-    this.#pitch = this.#pitch - 72; // baseline offset (tuned)
 
     // --- YAW (looking left/right) ---
     // Compare horizontal distance of nose from the midpoint of the ears
@@ -231,7 +249,10 @@ export class FaceTracker {
    * @param {boolean} [forceDown=false] — force "looking down" (e.g. no face)
    */
   #updateGazeState(now, forceDown = false) {
-    const rawDown = forceDown || this.#pitch > this.pitchThreshold;
+    // Compare current pitch against calibrated baseline
+    // Deviation = how far pitch has shifted from neutral (positive = looking down)
+    const pitchDeviation = this.#baselinePitch - this.#pitch;
+    const rawDown = forceDown || pitchDeviation > this.pitchThreshold;
 
     if (rawDown) {
       // Start or continue the look-down timer
@@ -351,6 +372,34 @@ export class FaceTracker {
    */
   get isLookingAway() {
     return this.#isLookingDown || this.#eyesClosed;
+  }
+
+  get isCalibrated() {
+    return this.#calibrated;
+  }
+
+  /** Calibration progress as 0–1 */
+  get calibrationProgress() {
+    if (this.#calibrated) return 1;
+    return this.#calibrationSamples.length / this.#calibrationFrames;
+  }
+
+  get baselinePitch() {
+    return this.#baselinePitch;
+  }
+
+  /** Current deviation from baseline (positive = looking down) */
+  get pitchDeviation() {
+    return this.#baselinePitch - this.#pitch;
+  }
+
+  /** Reset calibration to re-capture baseline */
+  recalibrate() {
+    this.#calibrated = false;
+    this.#calibrationSamples = [];
+    this.#baselinePitch = 0;
+    this.penaltyCount = 0;
+    console.log('[FaceTracker] Recalibration started');
   }
 
   get fps() {

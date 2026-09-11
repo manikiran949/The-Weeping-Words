@@ -75,8 +75,20 @@
         <div class="debug-section">
           <h3>Head Pose (degrees)</h3>
           <div class="debug-row">
-            <span class="debug-label">Pitch (up/down)</span>
+            <span class="debug-label">Calibration</span>
+            <span id="dbg-calibration" class="debug-value">—</span>
+          </div>
+          <div class="debug-row">
+            <span class="debug-label">Baseline Pitch</span>
+            <span id="dbg-baseline" class="debug-value">—</span>
+          </div>
+          <div class="debug-row">
+            <span class="debug-label">Raw Pitch</span>
             <span id="dbg-pitch" class="debug-value">—</span>
+          </div>
+          <div class="debug-row">
+            <span class="debug-label">Pitch Deviation</span>
+            <span id="dbg-deviation" class="debug-value">—</span>
           </div>
           <div class="debug-row">
             <span class="debug-label">Yaw (left/right)</span>
@@ -92,8 +104,8 @@
           <h3>Tuning Controls</h3>
           <div class="slider-row">
             <label for="slider-threshold">Pitch Threshold</label>
-            <input type="range" id="slider-threshold" min="5" max="40" value="15" step="1" />
-            <span id="slider-threshold-val" class="slider-val">15°</span>
+            <input type="range" id="slider-threshold" min="3" max="30" value="10" step="1" />
+            <span id="slider-threshold-val" class="slider-val">10°</span>
           </div>
           <div class="slider-row">
             <label for="slider-debounce">Debounce (ms)</label>
@@ -112,6 +124,9 @@
           <div class="debug-row">
             <span class="debug-label">Detection FPS</span>
             <span id="dbg-fps" class="debug-value">—</span>
+          </div>
+          <div style="margin-top: 0.8rem;">
+            <button id="btn-recalibrate" class="btn-secondary">Recalibrate</button>
           </div>
         </div>
       </div>
