@@ -9,6 +9,7 @@
 
 import { WebcamManager } from './WebcamManager.js';
 import { FaceTracker } from './FaceTracker.js';
+import { AlertSound } from './AlertSound.js';
 
 // ─── DOM References ───────────────────────────────────────────────
 
@@ -42,6 +43,7 @@ const sliderEarVal = document.getElementById('slider-ear-val');
 
 const webcam = new WebcamManager('webcam-video');
 const tracker = new FaceTracker();
+const alert = new AlertSound();
 
 // ─── Screen Transitions ──────────────────────────────────────────
 
@@ -83,6 +85,9 @@ btnGrantCamera.addEventListener('click', async () => {
   cameraError.hidden = true;
 
   try {
+    // Step 0: Init audio (must happen inside a user gesture)
+    alert.init();
+
     // Step 1: Start the webcam
     await webcam.start();
     console.log('[main] Webcam started', webcam.dimensions);
@@ -112,6 +117,13 @@ function detectionLoop() {
 
   // Draw landmarks overlay
   tracker.drawLandmarks(landmarkCanvas);
+
+  // Play/stop alert sound based on gaze state
+  if (tracker.isLookingAway) {
+    alert.play();
+  } else {
+    alert.stop();
+  }
 
   // Update debug UI
   updateDebugPanel();
