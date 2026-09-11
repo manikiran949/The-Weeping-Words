@@ -185,7 +185,14 @@ function gameLoop(now) {
   // Update canvas overlay based on current state
   const canvasId = currentState === GAME_STATE.SETUP ? 'landmark-canvas-setup' : 'landmark-canvas-game';
   const canvas = document.getElementById(canvasId);
-  if (canvas) tracker.drawLandmarks(canvas);
+  if (canvas) {
+    // Ensure canvas internal resolution matches the webcam feed
+    if (webcam.isActive && canvas.width !== webcam.dimensions.width && webcam.dimensions.width > 0) {
+      canvas.width = webcam.dimensions.width;
+      canvas.height = webcam.dimensions.height;
+    }
+    tracker.drawLandmarks(canvas);
+  }
 
   // 2. State specific logic
   if (currentState === GAME_STATE.SETUP) {

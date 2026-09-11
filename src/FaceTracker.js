@@ -117,11 +117,6 @@ export class FaceTracker {
     const drawingUtils = new DrawingUtils(ctx);
     const landmarks = this.#lastLandmarks[0];
 
-    // Flip horizontally to match the mirrored video
-    ctx.save();
-    ctx.scale(-1, 1);
-    ctx.translate(-canvas.width, 0);
-
     // Draw Tesselation (the grid over the face)
     drawingUtils.drawConnectors(
       landmarks,
@@ -147,8 +142,6 @@ export class FaceTracker {
       FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
       { color: '#E0E0E0' }
     );
-
-    ctx.restore();
   }
 
   /**
