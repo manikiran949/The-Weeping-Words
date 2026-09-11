@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mediapipe/tasks-vision": "^0.10.18"
+    "@mediapipe/tasks-vision": "^0.10.18",
+    "howler": "^2.2.4",
+    "three": "^0.186.0"
   },
   "devDependencies": {
     "vite": "^6.3.5"

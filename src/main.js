@@ -1,268 +1,234 @@
-/**
- * main.js — Entry point for the Face Tracking Prototype.
- *
- * Orchestrates:
- *  1. Setup screen → user grants camera
- *  2. Initialize webcam + MediaPipe Face Landmarker
- *  3. Run detection loop with real-time debug UI
- */
-
 import { WebcamManager } from './WebcamManager.js';
 import { FaceTracker } from './FaceTracker.js';
-import { AlertSound } from './AlertSound.js';
+import { TypingEngine } from './typing/TypingEngine.js';
+import { AudioEngine } from './audio/AudioEngine.js';
+import { SceneManager } from './scene/SceneManager.js';
+import { UIManager } from './ui/UIManager.js';
 
-// ─── DOM References ───────────────────────────────────────────────
+// ─── Constants ───────────────────────────────────────────────────
 
-const setupScreen = document.getElementById('setup-screen');
-const trackingScreen = document.getElementById('tracking-screen');
-const btnGrantCamera = document.getElementById('btn-grant-camera');
-const cameraError = document.getElementById('camera-error');
-const landmarkCanvas = document.getElementById('landmark-canvas');
-const gazeBadge = document.getElementById('gaze-status-badge');
+const INCANTATION = "Exorcizamus te, omnis immunde spiritus, omnis satanica potestas, omnis incursio infernalis adversarii, omnis legio, omnis congregatio et secta diabolica. Ergo, draco maledicte et omnis legio diabolica, adjuramus te.";
+const PENALTY_SPEED = 0.5; // Threat increase per second when looking away
+const RECOVERY_SPEED = 0.1; // Threat decrease per second when looking at screen
 
-// Debug panel elements
-const dbgFaceDetected = document.getElementById('dbg-face-detected');
-const dbgLookingDown = document.getElementById('dbg-looking-down');
-const dbgPenaltyCount = document.getElementById('dbg-penalty-count');
-const dbgEyesClosed = document.getElementById('dbg-eyes-closed');
-const dbgEarValue = document.getElementById('dbg-ear-value');
-const dbgGazeDown = document.getElementById('dbg-gaze-down');
-const dbgCalibration = document.getElementById('dbg-calibration');
-const dbgBaseline = document.getElementById('dbg-baseline');
-const dbgPitch = document.getElementById('dbg-pitch');
-const dbgDeviation = document.getElementById('dbg-deviation');
-const dbgYaw = document.getElementById('dbg-yaw');
-const dbgRoll = document.getElementById('dbg-roll');
-const dbgFps = document.getElementById('dbg-fps');
-const btnRecalibrate = document.getElementById('btn-recalibrate');
+// ─── Game State ──────────────────────────────────────────────────
 
-// Sliders
-const sliderThreshold = document.getElementById('slider-threshold');
-const sliderThresholdVal = document.getElementById('slider-threshold-val');
-const sliderDebounce = document.getElementById('slider-debounce');
-const sliderDebounceVal = document.getElementById('slider-debounce-val');
-const sliderEar = document.getElementById('slider-ear');
-const sliderEarVal = document.getElementById('slider-ear-val');
-const sliderGaze = document.getElementById('slider-gaze');
-const sliderGazeVal = document.getElementById('slider-gaze-val');
+const GAME_STATE = {
+  INTRO: 'intro',
+  SETUP: 'setup',
+  PLAYING: 'playing',
+  WIN: 'win',
+  GAMEOVER: 'gameover'
+};
+
+let currentState = GAME_STATE.INTRO;
+let threatLevel = 0.0; // 0.0 to 1.0
 
 // ─── Instances ────────────────────────────────────────────────────
 
 const webcam = new WebcamManager('webcam-video');
 const tracker = new FaceTracker();
-const alert = new AlertSound();
+const audio = new AudioEngine();
+const ui = new UIManager();
+const typing = new TypingEngine(INCANTATION);
+const scene = new SceneManager(document.getElementById('scene-container'));
 
-// ─── Screen Transitions ──────────────────────────────────────────
+// ─── Telemetry UI Elements ────────────────────────────────────────
 
-function showScreen(screen) {
-  document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
-  screen.classList.add('active');
-}
+const telHud = document.getElementById('telemetry-hud');
+const telPitch = document.getElementById('tel-pitch');
+const telEar = document.getElementById('tel-ear');
+const telGaze = document.getElementById('tel-gaze');
+const telBadge = document.getElementById('tel-badge');
 
-function showError(msg) {
-  cameraError.textContent = msg;
-  cameraError.hidden = false;
-}
-
-// ─── Slider Wiring ───────────────────────────────────────────────
-
-sliderThreshold.addEventListener('input', () => {
-  const val = parseInt(sliderThreshold.value, 10);
-  tracker.pitchThreshold = val;
-  sliderThresholdVal.textContent = `${val}°`;
-});
-
-sliderDebounce.addEventListener('input', () => {
-  const val = parseInt(sliderDebounce.value, 10);
-  tracker.debounceMs = val;
-  sliderDebounceVal.textContent = `${val}ms`;
-});
-
-sliderEar.addEventListener('input', () => {
-  const val = parseFloat(sliderEar.value);
-  tracker.earThreshold = val;
-  sliderEarVal.textContent = val.toFixed(2);
-});
-
-sliderGaze.addEventListener('input', () => {
-  const val = parseFloat(sliderGaze.value);
-  tracker.gazeDownThreshold = val;
-  sliderGazeVal.textContent = val.toFixed(2);
-});
-
-btnRecalibrate.addEventListener('click', () => {
-  tracker.recalibrate();
-});
-
-// ─── Camera Grant Button ─────────────────────────────────────────
-
-btnGrantCamera.addEventListener('click', async () => {
-  btnGrantCamera.disabled = true;
-  btnGrantCamera.textContent = '⏳ Starting camera…';
-  cameraError.hidden = true;
-
-  try {
-    // Step 0: Init audio (must happen inside a user gesture)
-    alert.init();
-
-    // Step 1: Start the webcam
-    await webcam.start();
-    console.log('[main] Webcam started', webcam.dimensions);
-
-    btnGrantCamera.textContent = '🧠 Loading face model…';
-
-    // Step 2: Initialize MediaPipe (downloads model)
-    await tracker.initialize();
-    console.log('[main] FaceTracker initialized');
-
-    // Step 3: Switch to tracking screen and start the loop
-    showScreen(trackingScreen);
-    requestAnimationFrame(detectionLoop);
-  } catch (err) {
-    console.error('[main] Setup error:', err);
-    showError(err.message);
-    btnGrantCamera.disabled = false;
-    btnGrantCamera.innerHTML = '<span class="btn-icon">📷</span> Retry Camera Access';
+function updateTelemetry() {
+  if (currentState !== GAME_STATE.SETUP && currentState !== GAME_STATE.PLAYING) {
+    telHud.classList.add('hidden');
+    return;
   }
-});
-
-// ─── Detection Loop ──────────────────────────────────────────────
-
-function detectionLoop() {
-  // Run face detection on current video frame
-  tracker.detect(webcam.videoElement);
-
-  // Draw landmarks overlay
-  tracker.drawLandmarks(landmarkCanvas);
-
-  // Play/stop alert sound based on gaze state (only after calibration)
-  if (tracker.isCalibrated && tracker.isLookingAway) {
-    alert.play();
-  } else {
-    alert.stop();
-  }
-
-  // Update debug UI
-  updateDebugPanel();
-  updateGazeBadge();
-
-  // Continue loop
-  requestAnimationFrame(detectionLoop);
-}
-
-// ─── Debug UI Updates ────────────────────────────────────────────
-
-function updateDebugPanel() {
-  // Face detected
-  if (tracker.hasFace) {
-    dbgFaceDetected.textContent = '✓ Yes';
-    dbgFaceDetected.className = 'debug-value val-green';
-  } else {
-    dbgFaceDetected.textContent = '✗ No';
-    dbgFaceDetected.className = 'debug-value val-red';
-  }
-
-  // Looking down
-  if (tracker.isLookingDown) {
-    dbgLookingDown.textContent = '⚠ YES';
-    dbgLookingDown.className = 'debug-value val-red';
-  } else {
-    dbgLookingDown.textContent = 'No';
-    dbgLookingDown.className = 'debug-value val-green';
-  }
-
-  // Penalty count
-  dbgPenaltyCount.textContent = tracker.penaltyCount.toString();
-  dbgPenaltyCount.className = tracker.penaltyCount > 0
-    ? 'debug-value val-amber'
-    : 'debug-value';
-
-  // Eyes closed
-  if (tracker.eyesClosed) {
-    dbgEyesClosed.textContent = '😑 YES';
-    dbgEyesClosed.className = 'debug-value val-red';
-  } else {
-    dbgEyesClosed.textContent = 'No';
-    dbgEyesClosed.className = 'debug-value val-green';
-  }
-
-  // Raw EAR value
-  dbgEarValue.textContent = tracker.earValue.toFixed(3);
-  dbgEarValue.className = tracker.earValue < tracker.earThreshold
-    ? 'debug-value val-red'
-    : 'debug-value val-green';
-
-  // Eye gaze down score
-  const gaze = tracker.eyeGazeDown;
-  dbgGazeDown.textContent = `${gaze.toFixed(3)}${tracker.isGazingDown ? ' ⬇️' : ''}`;
-  dbgGazeDown.className = tracker.isGazingDown
-    ? 'debug-value val-red'
-    : 'debug-value val-green';
-
-  // Calibration status
-  if (tracker.isCalibrated) {
-    dbgCalibration.textContent = '✓ Done';
-    dbgCalibration.className = 'debug-value val-green';
-    dbgBaseline.textContent = `${tracker.baselinePitch.toFixed(1)}°`;
-  } else {
-    const pct = Math.round(tracker.calibrationProgress * 100);
-    dbgCalibration.textContent = `${pct}%`;
-    dbgCalibration.className = 'debug-value val-amber';
-    dbgBaseline.textContent = 'calibrating…';
-    dbgBaseline.className = 'debug-value val-amber';
-  }
-
-  // Head pose values
-  dbgPitch.textContent = `${tracker.pitch.toFixed(1)}°`;
-
-  // Pitch deviation (the actual signal used for detection)
-  const dev = tracker.pitchDeviation;
-  dbgDeviation.textContent = `${dev.toFixed(1)}°`;
-  dbgDeviation.className = dev > tracker.pitchThreshold
-    ? 'debug-value val-red'
-    : 'debug-value';
-
-  dbgYaw.textContent = `${tracker.yaw.toFixed(1)}°`;
-  dbgRoll.textContent = `${tracker.roll.toFixed(1)}°`;
-
-  // FPS
-  dbgFps.textContent = `${tracker.fps}`;
-  dbgFps.className = tracker.fps >= 20
-    ? 'debug-value val-green'
-    : tracker.fps >= 10
-      ? 'debug-value val-amber'
-      : 'debug-value val-red';
-}
-
-function updateGazeBadge() {
-  // Remove all state classes
-  gazeBadge.classList.remove('gaze-unknown', 'gaze-ok', 'gaze-down', 'gaze-no-face');
+  
+  telHud.classList.remove('hidden');
 
   if (!tracker.hasFace) {
-    gazeBadge.textContent = '⚠ No Face Detected';
-    gazeBadge.classList.add('gaze-no-face');
-  } else if (!tracker.isCalibrated) {
-    const pct = Math.round(tracker.calibrationProgress * 100);
-    gazeBadge.textContent = `⏳ Calibrating… ${pct}%`;
-    gazeBadge.classList.add('gaze-unknown');
-  } else if (tracker.isLookingDown && tracker.eyesClosed) {
-    gazeBadge.textContent = '🔴 Looking Down + Eyes Closed!';
-    gazeBadge.classList.add('gaze-down');
-  } else if (tracker.isLookingDown) {
-    gazeBadge.textContent = '🔴 Looking Down!';
-    gazeBadge.classList.add('gaze-down');
-  } else if (tracker.isGazingDown) {
-    gazeBadge.textContent = '👁️ Eyes Looking Down!';
-    gazeBadge.classList.add('gaze-down');
-  } else if (tracker.eyesClosed) {
-    gazeBadge.textContent = '😑 Eyes Closed!';
-    gazeBadge.classList.add('gaze-down');
-  } else {
-    gazeBadge.textContent = '🟢 Looking at Screen';
-    gazeBadge.classList.add('gaze-ok');
+    telPitch.textContent = '—';
+    telEar.textContent = '—';
+    telGaze.textContent = '—';
+    telBadge.textContent = 'NO FACE DETECTED';
+    telBadge.className = 'telemetry-row badge danger';
+    return;
   }
+
+  // Pitch
+  const pitchDev = tracker.pitchDeviation;
+  telPitch.textContent = `${pitchDev > 0 ? '+' : ''}${pitchDev.toFixed(1)}°`;
+  telPitch.className = tracker.isLookingDown ? 'danger' : '';
+
+  // EAR
+  telEar.textContent = tracker.earValue.toFixed(3);
+  telEar.className = tracker.eyesClosed ? 'danger' : '';
+
+  // Gaze
+  telGaze.textContent = tracker.eyeGazeDown.toFixed(3);
+  telGaze.className = tracker.isGazingDown ? 'danger' : '';
+
+  // Badge
+  if (tracker.isLookingDown) {
+    telBadge.textContent = 'LOOKING DOWN';
+    telBadge.className = 'telemetry-row badge danger';
+  } else if (tracker.isGazingDown) {
+    telBadge.textContent = 'EYES LOOKING DOWN';
+    telBadge.className = 'telemetry-row badge danger';
+  } else if (tracker.eyesClosed) {
+    telBadge.textContent = 'EYES CLOSED';
+    telBadge.className = 'telemetry-row badge danger';
+  } else {
+    telBadge.textContent = 'TRACKING OK';
+    telBadge.className = 'telemetry-row badge';
+  }
+}
+
+// ─── Event Listeners & Wiring ─────────────────────────────────────
+
+// Intro -> Setup
+ui.btnGrantCamera.addEventListener('click', async () => {
+  ui.btnGrantCamera.disabled = true;
+  document.getElementById('camera-error').hidden = true;
+
+  try {
+    // Must initialize audio context on user gesture
+    audio.init();
+
+    await webcam.start();
+    
+    // Create actual video element inside WebcamManager
+    ui.moveWebcamToSetup(webcam.videoElement);
+    
+    await tracker.initialize();
+    
+    currentState = GAME_STATE.SETUP;
+    ui.showScreen('setup');
+    
+    // Start tracking loop
+    requestAnimationFrame(gameLoop);
+  } catch (err) {
+    console.error(err);
+    document.getElementById('camera-error').textContent = err.message || 'Camera access denied.';
+    document.getElementById('camera-error').hidden = false;
+    ui.btnGrantCamera.disabled = false;
+  }
+});
+
+// Setup -> Playing
+ui.btnStartGame.addEventListener('click', () => {
+  currentState = GAME_STATE.PLAYING;
+  threatLevel = 0.0;
+  
+  ui.moveWebcamToGame(webcam.videoElement);
+  ui.showScreen('game');
+  
+  // Start heartbeat and typing
+  audio.startHeartbeat();
+  typing.start();
+  ui.updateTypingHTML(typing.getHTML());
+});
+
+// Restart logic
+const restartGame = () => {
+  threatLevel = 0.0;
+  tracker.recalibrate();
+  currentState = GAME_STATE.SETUP;
+  ui.moveWebcamToSetup(webcam.videoElement);
+  ui.showScreen('setup');
+};
+
+ui.btnRestartWin.addEventListener('click', restartGame);
+ui.btnRestartLose.addEventListener('click', restartGame);
+
+// Typing Events
+typing.onUpdate = () => {
+  ui.updateTypingHTML(typing.getHTML());
+};
+
+typing.onCorrect = () => {
+  audio.playType();
+  // Small recovery bump
+  threatLevel = Math.max(0, threatLevel - 0.01);
+};
+
+typing.onError = () => {
+  audio.playError();
+  // Small penalty bump
+  threatLevel = Math.min(1.0, threatLevel + 0.05);
+};
+
+typing.onBackspace = () => {
+  audio.playBackspace();
+};
+
+typing.onComplete = () => {
+  currentState = GAME_STATE.WIN;
+  audio.stopHeartbeat();
+  ui.showScreen('win');
+};
+
+// ─── Main Game Loop ───────────────────────────────────────────────
+
+let lastTime = performance.now();
+
+function gameLoop(now) {
+  const delta = (now - lastTime) / 1000;
+  lastTime = now;
+
+  // 1. Process Face Tracking
+  tracker.detect(webcam.videoElement);
+  
+  // Update canvas overlay based on current state
+  const canvasId = currentState === GAME_STATE.SETUP ? 'landmark-canvas-setup' : 'landmark-canvas-game';
+  const canvas = document.getElementById(canvasId);
+  if (canvas) tracker.drawLandmarks(canvas);
+
+  // 2. State specific logic
+  if (currentState === GAME_STATE.SETUP) {
+    ui.updateSetupStatus(!tracker.isCalibrated, tracker.hasFace && tracker.isCalibrated, tracker.calibrationProgress);
+  } 
+  else if (currentState === GAME_STATE.PLAYING) {
+    // Penalty logic
+    if (tracker.isLookingAway) {
+      threatLevel += PENALTY_SPEED * delta;
+      scene.applyCameraShake(threatLevel);
+    } else {
+      threatLevel -= RECOVERY_SPEED * delta;
+      scene.applyCameraShake(0);
+    }
+    
+    threatLevel = Math.max(0.0, Math.min(1.0, threatLevel));
+    
+    // Update Systems
+    ui.updateThreatMeter(threatLevel);
+    audio.setHeartbeatIntensity(threatLevel);
+    
+    // Game Over condition
+    if (threatLevel >= 1.0) {
+      currentState = GAME_STATE.GAMEOVER;
+      typing.stop();
+      audio.stopHeartbeat();
+      audio.playJumpscare();
+      ui.triggerJumpscare();
+      ui.showScreen('gameover');
+      scene.applyCameraShake(0);
+    }
+  }
+
+  // Update telemetry overlay
+  updateTelemetry();
+
+  // 3. Render 3D Scene (runs in all states to keep effects alive)
+  scene.update(threatLevel);
+
+  requestAnimationFrame(gameLoop);
 }
 
 // ─── Init ─────────────────────────────────────────────────────────
 
-console.log('[Typing Exorcism] Phase 1 — Face Tracking Prototype loaded');
+console.log('[Typing Exorcism] Main loaded.');
+ui.showScreen('intro');

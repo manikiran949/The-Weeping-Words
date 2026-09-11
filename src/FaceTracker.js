@@ -8,7 +8,7 @@
  * debounce window.
  */
 
-import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+import { FaceLandmarker, FilesetResolver, DrawingUtils } from '@mediapipe/tasks-vision';
 
 /** CDN base for MediaPipe WASM + model files */
 const MEDIAPIPE_WASM_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm';
@@ -100,6 +100,56 @@ export class FaceTracker {
   // --- Landmark drawing ---
   /** @type {import('@mediapipe/tasks-vision').NormalizedLandmark[][] | null} */
   #lastLandmarks = null;
+
+  /**
+   * Draw the detected face landmarks onto the provided canvas.
+   * @param {HTMLCanvasElement} canvas
+   */
+  drawLandmarks(canvas) {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!this.#lastLandmarks || this.#lastLandmarks.length === 0) return;
+
+    const drawingUtils = new DrawingUtils(ctx);
+    const landmarks = this.#lastLandmarks[0];
+
+    // Flip horizontally to match the mirrored video
+    ctx.save();
+    ctx.scale(-1, 1);
+    ctx.translate(-canvas.width, 0);
+
+    // Draw Tesselation (the grid over the face)
+    drawingUtils.drawConnectors(
+      landmarks,
+      FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+      { color: '#C0C0C070', lineWidth: 1 }
+    );
+
+    // Draw Eye boundaries
+    drawingUtils.drawConnectors(
+      landmarks,
+      FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
+      { color: '#FF3030' }
+    );
+    drawingUtils.drawConnectors(
+      landmarks,
+      FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
+      { color: '#30FF30' }
+    );
+
+    // Draw Face Oval
+    drawingUtils.drawConnectors(
+      landmarks,
+      FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
+      { color: '#E0E0E0' }
+    );
+
+    ctx.restore();
+  }
 
   /**
    * Initialize the FaceLandmarker. Downloads WASM runtime + model.
