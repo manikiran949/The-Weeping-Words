@@ -60,13 +60,13 @@ export class FaceTracker {
 
   // --- Gaze state ---
   /** @type {number} threshold in degrees — deviation from baseline to trigger */
-  pitchThreshold = 10;
+  pitchThreshold = 15;
   /** @type {number} debounce in ms — must sustain look-away this long */
   debounceMs = 300;
   /** @type {number} EAR threshold — below this = eyes closed */
   earThreshold = 0.18;
   /** @type {number} blendshape threshold — above this = eyes gazing down */
-  gazeDownThreshold = 0.35;
+  gazeDownThreshold = 0.45;
 
   /** @type {number} raw average Eye Aspect Ratio */
   #earValue = 0;
