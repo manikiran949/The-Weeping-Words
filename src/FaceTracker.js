@@ -59,6 +59,11 @@ export class FaceTracker {
   pitchThreshold = 15;
   /** @type {number} debounce in ms — must sustain look-away this long */
   debounceMs = 300;
+  /** @type {number} EAR threshold — below this = eyes closed */
+  earThreshold = 0.18;
+
+  /** @type {number} raw average Eye Aspect Ratio */
+  #earValue = 0;
 
   /** @type {boolean} debounced output: is the player looking down? */
   #isLookingDown = false;
@@ -213,18 +218,20 @@ export class FaceTracker {
     const rightEAR = getDistance(rightTop, rightBottom) / getDistance(rightInner, rightOuter);
 
     const averageEAR = (leftEAR + rightEAR) / 2.0;
+    this.#earValue = averageEAR;
 
-    // Threshold for eyes closed is typically around 0.2
-    this.#eyesClosed = averageEAR < 0.2;
+    // Compare against configurable threshold
+    this.#eyesClosed = averageEAR < this.earThreshold;
   }
 
   /**
    * Update the debounced looking-down state.
+   * Uses ONLY head pitch — eye-close is tracked independently.
    * @param {number} now — current timestamp
    * @param {boolean} [forceDown=false] — force "looking down" (e.g. no face)
    */
   #updateGazeState(now, forceDown = false) {
-    const rawDown = forceDown || this.#pitch > this.pitchThreshold || this.#eyesClosed;
+    const rawDown = forceDown || this.#pitch > this.pitchThreshold;
 
     if (rawDown) {
       // Start or continue the look-down timer
@@ -330,6 +337,20 @@ export class FaceTracker {
 
   get eyesClosed() {
     return this.#eyesClosed;
+  }
+
+  /** Raw Eye Aspect Ratio value (higher = more open) */
+  get earValue() {
+    return this.#earValue;
+  }
+
+  /**
+   * Combined signal: player is looking away from the screen.
+   * True if head is tilted down OR eyes are closed (after debounce).
+   * Use this in the game for demon-advance logic.
+   */
+  get isLookingAway() {
+    return this.#isLookingDown || this.#eyesClosed;
   }
 
   get fps() {

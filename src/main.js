@@ -24,6 +24,7 @@ const dbgFaceDetected = document.getElementById('dbg-face-detected');
 const dbgLookingDown = document.getElementById('dbg-looking-down');
 const dbgPenaltyCount = document.getElementById('dbg-penalty-count');
 const dbgEyesClosed = document.getElementById('dbg-eyes-closed');
+const dbgEarValue = document.getElementById('dbg-ear-value');
 const dbgPitch = document.getElementById('dbg-pitch');
 const dbgYaw = document.getElementById('dbg-yaw');
 const dbgRoll = document.getElementById('dbg-roll');
@@ -34,6 +35,8 @@ const sliderThreshold = document.getElementById('slider-threshold');
 const sliderThresholdVal = document.getElementById('slider-threshold-val');
 const sliderDebounce = document.getElementById('slider-debounce');
 const sliderDebounceVal = document.getElementById('slider-debounce-val');
+const sliderEar = document.getElementById('slider-ear');
+const sliderEarVal = document.getElementById('slider-ear-val');
 
 // ─── Instances ────────────────────────────────────────────────────
 
@@ -64,6 +67,12 @@ sliderDebounce.addEventListener('input', () => {
   const val = parseInt(sliderDebounce.value, 10);
   tracker.debounceMs = val;
   sliderDebounceVal.textContent = `${val}ms`;
+});
+
+sliderEar.addEventListener('input', () => {
+  const val = parseFloat(sliderEar.value);
+  tracker.earThreshold = val;
+  sliderEarVal.textContent = val.toFixed(2);
 });
 
 // ─── Camera Grant Button ─────────────────────────────────────────
@@ -148,6 +157,12 @@ function updateDebugPanel() {
     dbgEyesClosed.className = 'debug-value val-green';
   }
 
+  // Raw EAR value
+  dbgEarValue.textContent = tracker.earValue.toFixed(3);
+  dbgEarValue.className = tracker.earValue < tracker.earThreshold
+    ? 'debug-value val-red'
+    : 'debug-value val-green';
+
   // Head pose values
   dbgPitch.textContent = `${tracker.pitch.toFixed(1)}°`;
   dbgPitch.className = tracker.pitch > tracker.pitchThreshold
@@ -173,11 +188,14 @@ function updateGazeBadge() {
   if (!tracker.hasFace) {
     gazeBadge.textContent = '⚠ No Face Detected';
     gazeBadge.classList.add('gaze-no-face');
-  } else if (tracker.eyesClosed) {
-    gazeBadge.textContent = '😑 Eyes Closed!';
+  } else if (tracker.isLookingDown && tracker.eyesClosed) {
+    gazeBadge.textContent = '🔴 Looking Down + Eyes Closed!';
     gazeBadge.classList.add('gaze-down');
   } else if (tracker.isLookingDown) {
     gazeBadge.textContent = '🔴 Looking Down!';
+    gazeBadge.classList.add('gaze-down');
+  } else if (tracker.eyesClosed) {
+    gazeBadge.textContent = '😑 Eyes Closed!';
     gazeBadge.classList.add('gaze-down');
   } else {
     gazeBadge.textContent = '🟢 Looking at Screen';
