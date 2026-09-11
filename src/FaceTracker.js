@@ -53,6 +53,10 @@ export class FaceTracker {
   #roll = 0;
   /** @type {boolean} whether eyes are currently closed */
   #eyesClosed = false;
+  /** @type {number} eye gaze-down score from blendshapes (0 = looking up, 1 = looking fully down) */
+  #eyeGazeDown = 0;
+  /** @type {boolean} whether eyes are gazing downward */
+  #isGazingDown = false;
 
   // --- Gaze state ---
   /** @type {number} threshold in degrees — deviation from baseline to trigger */
@@ -61,6 +65,8 @@ export class FaceTracker {
   debounceMs = 300;
   /** @type {number} EAR threshold — below this = eyes closed */
   earThreshold = 0.18;
+  /** @type {number} blendshape threshold — above this = eyes gazing down */
+  gazeDownThreshold = 0.35;
 
   /** @type {number} raw average Eye Aspect Ratio */
   #earValue = 0;
@@ -109,7 +115,7 @@ export class FaceTracker {
       },
       runningMode: 'VIDEO',
       numFaces: 1,
-      outputFaceBlendshapes: false,
+      outputFaceBlendshapes: true,   // Enables eye gaze direction scores
       outputFacialTransformationMatrixes: false,
     });
 
@@ -149,11 +155,15 @@ export class FaceTracker {
       this.#computeHeadPose(landmarks);
       this.#computeEyeState(landmarks);
 
+      // --- Extract eye gaze from blendshapes ---
+      if (result.faceBlendshapes && result.faceBlendshapes.length > 0) {
+        this.#computeEyeGaze(result.faceBlendshapes[0].categories);
+      }
+
       // --- Calibration phase ---
       if (!this.#calibrated) {
         this.#calibrationSamples.push(this.#pitch);
         if (this.#calibrationSamples.length >= this.#calibrationFrames) {
-          // Average the samples to get baseline
           const sum = this.#calibrationSamples.reduce((a, b) => a + b, 0);
           this.#baselinePitch = sum / this.#calibrationSamples.length;
           this.#calibrated = true;
@@ -170,6 +180,8 @@ export class FaceTracker {
       this.#yaw = 0;
       this.#roll = 0;
       this.#eyesClosed = false;
+      this.#eyeGazeDown = 0;
+      this.#isGazingDown = false;
       // No face = treat as looking away
       this.#updateGazeState(now, true);
     }
@@ -243,16 +255,36 @@ export class FaceTracker {
   }
 
   /**
+   * Extract eye gaze direction from face blendshapes.
+   * Uses eyeLookDown scores which track where the pupil is pointing.
+   *
+   * @param {Array<{categoryName: string, score: number}>} categories
+   */
+  #computeEyeGaze(categories) {
+    let lookDownLeft = 0;
+    let lookDownRight = 0;
+
+    for (const cat of categories) {
+      if (cat.categoryName === 'eyeLookDownLeft') lookDownLeft = cat.score;
+      if (cat.categoryName === 'eyeLookDownRight') lookDownRight = cat.score;
+    }
+
+    this.#eyeGazeDown = (lookDownLeft + lookDownRight) / 2;
+    this.#isGazingDown = this.#eyeGazeDown > this.gazeDownThreshold;
+  }
+
+  /**
    * Update the debounced looking-down state.
    * Uses ONLY head pitch — eye-close is tracked independently.
    * @param {number} now — current timestamp
    * @param {boolean} [forceDown=false] — force "looking down" (e.g. no face)
    */
   #updateGazeState(now, forceDown = false) {
-    // Compare current pitch against calibrated baseline
-    // Deviation = how far pitch has shifted from neutral (positive = looking down)
+    // Combine all signals:
+    // 1. Head pitch deviation from baseline (head tilt)
+    // 2. Eye gaze blendshape (pupil direction)
     const pitchDeviation = this.#baselinePitch - this.#pitch;
-    const rawDown = forceDown || pitchDeviation > this.pitchThreshold;
+    const rawDown = forceDown || pitchDeviation > this.pitchThreshold || this.#isGazingDown;
 
     if (rawDown) {
       // Start or continue the look-down timer
@@ -365,9 +397,19 @@ export class FaceTracker {
     return this.#earValue;
   }
 
+  /** Eye gaze-down score (0-1 from blendshapes) */
+  get eyeGazeDown() {
+    return this.#eyeGazeDown;
+  }
+
+  /** Whether eyes are gazing downward (past threshold) */
+  get isGazingDown() {
+    return this.#isGazingDown;
+  }
+
   /**
    * Combined signal: player is looking away from the screen.
-   * True if head is tilted down OR eyes are closed (after debounce).
+   * True if head tilted down OR eyes gazing down OR eyes closed.
    * Use this in the game for demon-advance logic.
    */
   get isLookingAway() {

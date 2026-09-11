@@ -26,6 +26,7 @@ const dbgLookingDown = document.getElementById('dbg-looking-down');
 const dbgPenaltyCount = document.getElementById('dbg-penalty-count');
 const dbgEyesClosed = document.getElementById('dbg-eyes-closed');
 const dbgEarValue = document.getElementById('dbg-ear-value');
+const dbgGazeDown = document.getElementById('dbg-gaze-down');
 const dbgCalibration = document.getElementById('dbg-calibration');
 const dbgBaseline = document.getElementById('dbg-baseline');
 const dbgPitch = document.getElementById('dbg-pitch');
@@ -42,6 +43,8 @@ const sliderDebounce = document.getElementById('slider-debounce');
 const sliderDebounceVal = document.getElementById('slider-debounce-val');
 const sliderEar = document.getElementById('slider-ear');
 const sliderEarVal = document.getElementById('slider-ear-val');
+const sliderGaze = document.getElementById('slider-gaze');
+const sliderGazeVal = document.getElementById('slider-gaze-val');
 
 // ─── Instances ────────────────────────────────────────────────────
 
@@ -79,6 +82,12 @@ sliderEar.addEventListener('input', () => {
   const val = parseFloat(sliderEar.value);
   tracker.earThreshold = val;
   sliderEarVal.textContent = val.toFixed(2);
+});
+
+sliderGaze.addEventListener('input', () => {
+  const val = parseFloat(sliderGaze.value);
+  tracker.gazeDownThreshold = val;
+  sliderGazeVal.textContent = val.toFixed(2);
 });
 
 btnRecalibrate.addEventListener('click', () => {
@@ -183,6 +192,13 @@ function updateDebugPanel() {
     ? 'debug-value val-red'
     : 'debug-value val-green';
 
+  // Eye gaze down score
+  const gaze = tracker.eyeGazeDown;
+  dbgGazeDown.textContent = `${gaze.toFixed(3)}${tracker.isGazingDown ? ' ⬇️' : ''}`;
+  dbgGazeDown.className = tracker.isGazingDown
+    ? 'debug-value val-red'
+    : 'debug-value val-green';
+
   // Calibration status
   if (tracker.isCalibrated) {
     dbgCalibration.textContent = '✓ Done';
@@ -234,6 +250,9 @@ function updateGazeBadge() {
     gazeBadge.classList.add('gaze-down');
   } else if (tracker.isLookingDown) {
     gazeBadge.textContent = '🔴 Looking Down!';
+    gazeBadge.classList.add('gaze-down');
+  } else if (tracker.isGazingDown) {
+    gazeBadge.textContent = '👁️ Eyes Looking Down!';
     gazeBadge.classList.add('gaze-down');
   } else if (tracker.eyesClosed) {
     gazeBadge.textContent = '😑 Eyes Closed!';
