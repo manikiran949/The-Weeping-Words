@@ -43,8 +43,9 @@ export class SceneManager {
     
     this.clock = new THREE.Clock();
     
-    // Event listeners
-    window.addEventListener('resize', this.onWindowResize.bind(this));
+    // Store bound handler so we can remove it later
+    this._boundResize = this.onWindowResize.bind(this);
+    window.addEventListener('resize', this._boundResize);
   }
 
   onWindowResize() {
@@ -87,7 +88,7 @@ export class SceneManager {
   }
 
   destroy() {
-    window.removeEventListener('resize', this.onWindowResize.bind(this));
+    window.removeEventListener('resize', this._boundResize);
     if (this.container && this.renderer.domElement) {
       this.container.removeChild(this.renderer.domElement);
     }

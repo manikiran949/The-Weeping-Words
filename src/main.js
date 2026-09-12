@@ -99,9 +99,7 @@ ui.btnGrantCamera.addEventListener('click', async () => {
     audio.init();
 
     await webcam.start();
-    
-    // Create actual video element inside WebcamManager
-    ui.moveWebcamToSetup(webcam.videoElement);
+    // Video element is already in setup-video-container (hardcoded in HTML)
     
     await tracker.initialize();
     
@@ -123,7 +121,12 @@ ui.btnStartGame.addEventListener('click', () => {
   currentState = GAME_STATE.PLAYING;
   threatLevel = 0.0;
   
+  // Move the video AND its landmark canvas to the game container
+  const setupCanvas = document.getElementById('landmark-canvas-setup');
   ui.moveWebcamToGame(webcam.videoElement);
+  if (setupCanvas) {
+    document.getElementById('game-video-container').appendChild(setupCanvas);
+  }
   ui.showScreen('game');
   
   // Start heartbeat and typing
@@ -136,8 +139,16 @@ ui.btnStartGame.addEventListener('click', () => {
 const restartGame = () => {
   threatLevel = 0.0;
   tracker.recalibrate();
+  typing.stop();
+  audio.stopHeartbeat();
   currentState = GAME_STATE.SETUP;
+  
+  // Move video and canvas back to setup container
   ui.moveWebcamToSetup(webcam.videoElement);
+  const setupCanvas = document.getElementById('landmark-canvas-setup');
+  if (setupCanvas) {
+    document.getElementById('setup-video-container').appendChild(setupCanvas);
+  }
   ui.showScreen('setup');
 };
 
@@ -182,16 +193,10 @@ function gameLoop(now) {
   // 1. Process Face Tracking
   tracker.detect(webcam.videoElement);
   
-  // Update canvas overlay based on current state
-  const canvasId = currentState === GAME_STATE.SETUP ? 'landmark-canvas-setup' : 'landmark-canvas-game';
-  const canvas = document.getElementById(canvasId);
+  // Update canvas overlay — we reuse landmark-canvas-setup which follows the video
+  const canvas = document.getElementById('landmark-canvas-setup');
   if (canvas) {
-    // Ensure canvas internal resolution matches the webcam feed
-    if (webcam.isActive && canvas.width !== webcam.dimensions.width && webcam.dimensions.width > 0) {
-      canvas.width = webcam.dimensions.width;
-      canvas.height = webcam.dimensions.height;
-    }
-    tracker.drawLandmarks(canvas);
+    tracker.drawLandmarks(canvas, webcam.videoElement);
   }
 
   // 2. State specific logic

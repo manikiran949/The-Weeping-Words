@@ -103,11 +103,28 @@ export class FaceTracker {
 
   /**
    * Draw the detected face landmarks onto the provided canvas.
+   * Uses MediaPipe DrawingUtils for mesh connectors and manual drawing
+   * for key landmark highlights and pitch indicator.
    * @param {HTMLCanvasElement} canvas
+   * @param {HTMLVideoElement} [video] - optional video for resolution sync
    */
-  drawLandmarks(canvas) {
+  drawLandmarks(canvas, video) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Sync canvas internal resolution with video or display size
+    if (video && video.videoWidth > 0) {
+      if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      }
+    } else {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0 && (canvas.width !== rect.width || canvas.height !== rect.height)) {
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+      }
+    }
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -136,12 +153,41 @@ export class FaceTracker {
       { color: '#30FF30' }
     );
 
+    // Draw Lips
+    drawingUtils.drawConnectors(
+      landmarks,
+      FaceLandmarker.FACE_LANDMARKS_LIPS,
+      { color: '#FF306080' }
+    );
+
     // Draw Face Oval
     drawingUtils.drawConnectors(
       landmarks,
       FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
       { color: '#E0E0E0' }
     );
+
+    // Draw key landmark highlights (pose estimation points)
+    const w = canvas.width;
+    const h = canvas.height;
+    const keyIndices = Object.values(LANDMARKS);
+    ctx.fillStyle = '#ff3355';
+    for (const idx of keyIndices) {
+      const lm = landmarks[idx];
+      ctx.beginPath();
+      ctx.arc(lm.x * w, lm.y * h, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Draw pitch direction indicator (forehead → nose line)
+    const nose = landmarks[LANDMARKS.NOSE_TIP];
+    const forehead = landmarks[LANDMARKS.FOREHEAD];
+    ctx.strokeStyle = this.#isLookingDown ? '#ff3355' : '#00ff88';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(forehead.x * w, forehead.y * h);
+    ctx.lineTo(nose.x * w, nose.y * h);
+    ctx.stroke();
   }
 
   /**
@@ -349,61 +395,6 @@ export class FaceTracker {
     }
   }
 
-  /**
-   * Draw landmark points onto a canvas overlay (for debugging).
-   * @param {HTMLCanvasElement} canvas
-   */
-  drawLandmarks(canvas) {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Match canvas resolution to its display size
-    const rect = canvas.getBoundingClientRect();
-    if (canvas.width !== rect.width || canvas.height !== rect.height) {
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-    }
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (!this.#lastLandmarks || this.#lastLandmarks.length === 0) return;
-
-    const landmarks = this.#lastLandmarks[0];
-    const w = canvas.width;
-    const h = canvas.height;
-
-    // Draw all landmarks as tiny dots
-    ctx.fillStyle = 'rgba(0, 255, 136, 0.4)';
-    for (const lm of landmarks) {
-      const x = lm.x * w;
-      const y = lm.y * h;
-      ctx.beginPath();
-      ctx.arc(x, y, 1.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Highlight key landmarks used for pose estimation
-    const keyIndices = Object.values(LANDMARKS);
-    ctx.fillStyle = '#ff3355';
-    for (const idx of keyIndices) {
-      const lm = landmarks[idx];
-      const x = lm.x * w;
-      const y = lm.y * h;
-      ctx.beginPath();
-      ctx.arc(x, y, 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Draw pitch direction indicator
-    const nose = landmarks[LANDMARKS.NOSE_TIP];
-    const forehead = landmarks[LANDMARKS.FOREHEAD];
-    ctx.strokeStyle = this.#isLookingDown ? '#ff3355' : '#00ff88';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(forehead.x * w, forehead.y * h);
-    ctx.lineTo(nose.x * w, nose.y * h);
-    ctx.stroke();
-  }
 
   // --- Public getters ---
 

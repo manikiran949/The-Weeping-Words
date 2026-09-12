@@ -108,6 +108,7 @@ export class AudioEngine {
   }
 
   _triggerThump(time, intensity) {
+    if (!this.ctx || !this.heartbeatGain) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
