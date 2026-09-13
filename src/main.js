@@ -162,8 +162,7 @@ typing.onUpdate = () => {
 
 typing.onCorrect = () => {
   audio.playType();
-  // Small recovery bump
-  threatLevel = Math.max(0, threatLevel - 0.01);
+  // Demon is frozen, but typing correctly does not push it back.
 };
 
 typing.onError = () => {
@@ -204,12 +203,12 @@ function gameLoop(now) {
     ui.updateSetupStatus(!tracker.isCalibrated, tracker.hasFace && tracker.isCalibrated, tracker.calibrationProgress);
   } 
   else if (currentState === GAME_STATE.PLAYING) {
-    // Penalty logic
+    // Penalty logic (cumulative threat)
     if (tracker.isLookingAway) {
       threatLevel += PENALTY_SPEED * delta;
       scene.applyCameraShake(threatLevel);
     } else {
-      threatLevel -= RECOVERY_SPEED * delta;
+      // Demon is frozen when you look at the screen
       scene.applyCameraShake(0);
     }
     
