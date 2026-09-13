@@ -17,6 +17,7 @@ const GAME_STATE = {
   INTRO: 'intro',
   SETUP: 'setup',
   PLAYING: 'playing',
+  JUMPSCARE: 'jumpscare',
   WIN: 'win',
   GAMEOVER: 'gameover'
 };
@@ -141,6 +142,7 @@ const restartGame = () => {
   tracker.recalibrate();
   typing.stop();
   audio.stopHeartbeat();
+  scene.reset();
   currentState = GAME_STATE.SETUP;
   
   // Move video and canvas back to setup container
@@ -199,6 +201,8 @@ function gameLoop(now) {
   }
 
   // 2. State specific logic
+  let renderThreat = threatLevel;
+  
   if (currentState === GAME_STATE.SETUP) {
     ui.updateSetupStatus(!tracker.isCalibrated, tracker.hasFace && tracker.isCalibrated, tracker.calibrationProgress);
   } 
@@ -220,21 +224,33 @@ function gameLoop(now) {
     
     // Game Over condition
     if (threatLevel >= 1.0) {
-      currentState = GAME_STATE.GAMEOVER;
+      currentState = GAME_STATE.JUMPSCARE;
       typing.stop();
       audio.stopHeartbeat();
       audio.playJumpscare();
-      ui.triggerJumpscare();
-      ui.showScreen('gameover');
-      scene.applyCameraShake(0);
+      scene.triggerJumpscare();
+      
+      // Delay final red screen so we see the lunge
+      setTimeout(() => {
+        if (currentState === GAME_STATE.JUMPSCARE) {
+          currentState = GAME_STATE.GAMEOVER;
+          ui.triggerJumpscare();
+          ui.showScreen('gameover');
+          scene.applyCameraShake(0);
+        }
+      }, 400);
     }
+  }
+  else if (currentState === GAME_STATE.JUMPSCARE) {
+    scene.applyCameraShake(2.0); // max shake
+    renderThreat = 2.0; // max shader glitch
   }
 
   // Update telemetry overlay
   updateTelemetry();
 
   // 3. Render 3D Scene (runs in all states to keep effects alive)
-  scene.update(threatLevel);
+  scene.update(renderThreat);
 
   requestAnimationFrame(gameLoop);
 }

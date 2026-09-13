@@ -87,6 +87,14 @@ export class SceneManager {
     }
   }
 
+  triggerJumpscare() {
+    this.demon.lunge();
+  }
+  
+  reset() {
+    this.demon.reset();
+  }
+
   destroy() {
     window.removeEventListener('resize', this._boundResize);
     if (this.container && this.renderer.domElement) {

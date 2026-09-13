@@ -16,6 +16,9 @@ export class Demon {
     // Internal animation time
     this.time = 0;
     
+    this.isLunging = false;
+    this.lungeTime = 0;
+    
     this._buildDemon();
   }
 
@@ -88,30 +91,63 @@ export class Demon {
   update(delta) {
     this.time += delta;
     
-    // Idle float animation
-    this.group.position.y = Math.sin(this.time * 1.5) * 1.5;
-    this.body.rotation.y = Math.sin(this.time * 0.5) * 0.2;
-    this.body.rotation.z = Math.cos(this.time * 0.3) * 0.1;
+    if (this.isLunging) {
+      this.lungeTime += delta;
+      
+      // Lunge forward extremely fast
+      this.group.position.z += 80 * delta; 
+      
+      // Scale up to encompass the screen
+      const scale = 1 + this.lungeTime * 15;
+      this.body.scale.setScalar(scale);
+      
+      // Eyes explode in size
+      const eyeScale = 2 + this.lungeTime * 30;
+      this.leftEye.scale.setScalar(eyeScale);
+      this.rightEye.scale.setScalar(eyeScale);
+      
+    } else {
+      // Idle float animation
+      this.group.position.y = Math.sin(this.time * 1.5) * 1.5;
+      this.body.rotation.y = Math.sin(this.time * 0.5) * 0.2;
+      this.body.rotation.z = Math.cos(this.time * 0.3) * 0.1;
+      
+      // Pulse eyes
+      const pulse = (Math.sin(this.time * 5) + 1) * 0.5; // 0 to 1
+      const eyeScale = 1 + pulse * 0.2;
+      this.leftEye.scale.set(eyeScale, eyeScale, eyeScale);
+      this.rightEye.scale.set(eyeScale, eyeScale, eyeScale);
+    }
     
     // Writhe tendrils
     this.tendrils.forEach(t => {
-      t.mesh.rotation.x = Math.sin(this.time * t.speed + t.offset) * 0.5;
-      t.mesh.rotation.z = Math.cos(this.time * t.speed + t.offset) * 0.5;
+      // Writhe much faster during lunge
+      const speedMult = this.isLunging ? 6 : 1;
+      t.mesh.rotation.x = Math.sin(this.time * t.speed * speedMult + t.offset) * 0.5;
+      t.mesh.rotation.z = Math.cos(this.time * t.speed * speedMult + t.offset) * 0.5;
     });
-    
-    // Pulse eyes
-    const pulse = (Math.sin(this.time * 5) + 1) * 0.5; // 0 to 1
-    const scale = 1 + pulse * 0.2;
-    this.leftEye.scale.set(scale, scale, scale);
-    this.rightEye.scale.set(scale, scale, scale);
   }
 
   setThreatLevel(level) {
+    if (this.isLunging) return; // Don't override position if lunging
+    
     // Level is 0.0 to 1.0
     // Z moves from -80 to -10 (close to camera)
     const targetZ = this.baseZ + (level * 70);
     
     // Smooth lerp toward target Z
     this.group.position.z += (targetZ - this.group.position.z) * 0.05;
+  }
+  
+  lunge() {
+    this.isLunging = true;
+    this.lungeTime = 0;
+  }
+  
+  reset() {
+    this.isLunging = false;
+    this.lungeTime = 0;
+    this.body.scale.setScalar(1);
+    this.group.position.set(0, 0, this.baseZ);
   }
 }
