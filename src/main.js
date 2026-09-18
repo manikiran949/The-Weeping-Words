@@ -228,11 +228,12 @@ function gameLoop(now) {
   } 
   else if (currentState === GAME_STATE.PLAYING) {
     // Penalty logic (cumulative threat)
-    if (tracker.isLookingAway) {
+    const isWatching = !tracker.isLookingAway;
+    if (!isWatching) {
       threatLevel += PENALTY_SPEED * delta;
       scene.applyCameraShake(threatLevel);
     } else {
-      // Demon is frozen when you look at the screen
+      // Angel is frozen when you look at the screen
       scene.applyCameraShake(0);
     }
     
@@ -270,7 +271,8 @@ function gameLoop(now) {
   updateTelemetry();
 
   // 3. Render 3D Scene (runs in all states to keep effects alive)
-  scene.update(renderThreat);
+  const isWatchingNow = currentState === GAME_STATE.PLAYING ? !tracker.isLookingAway : true;
+  scene.update(renderThreat, isWatchingNow);
 
   requestAnimationFrame(gameLoop);
 }
