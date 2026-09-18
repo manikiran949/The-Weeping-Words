@@ -156,9 +156,7 @@ button {
 .video-container.small {
   width: 200px;
   height: 150px;
-  position: absolute;
-  top: 20px;
-  right: 20px;
+  position: relative;
   border: 1px solid #333;
   opacity: 0.8;
 }
@@ -176,7 +174,7 @@ button {
 /* --- Telemetry HUD --- */
 #telemetry-hud {
   position: absolute;
-  top: 20px;
+  bottom: 20px;
   left: 20px;
   background: rgba(0, 0, 0, 0.8);
   border: 1px solid var(--color-accent);
@@ -236,18 +234,22 @@ button {
 .status-text.ready { color: var(--color-correct); }
 
 /* --- HUD --- */
-.hud-top {
+.hud-bottom {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: 20px;
+}
+
+.threat-meter {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  padding: 20px;
-  display: flex;
-  justify-content: space-between;
-}
-
-.threat-meter {
-  width: 300px;
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.85);
+  border-bottom: 1px solid #222;
+  z-index: 10;
 }
 
 .threat-label {
@@ -271,21 +273,72 @@ button {
   transition: width 0.1s linear, background-color 0.3s ease;
 }
 
-/* --- Typing Area --- */
+/* --- Typing Area (single-line, top-positioned for eye-tracking) --- */
 .typing-wrapper {
-  width: 80%;
-  max-width: 800px;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 2rem;
-  border: 1px solid #222;
-  box-shadow: 0 0 50px rgba(0,0,0,0.9);
+  position: absolute;
+  top: 50px;
+  left: 0;
+  width: 100%;
+  padding: 0.8rem 2rem;
+  background: rgba(0, 0, 0, 0.85);
+  border-bottom: 1px solid #222;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.9);
+  z-index: 5;
+}
+
+.typing-line-hud {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0.5rem;
+}
+
+.line-label {
+  font-size: 0.7rem;
+  color: #666;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.typing-progress-track {
+  flex: 1;
+  height: 3px;
+  background: #1a1a1a;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.typing-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--color-correct), #00cc55);
+  transition: width 0.2s ease;
+  box-shadow: 0 0 6px var(--color-correct);
 }
 
 .typing-text {
   font-size: 2rem;
-  line-height: 1.5;
-  text-align: center;
-  word-wrap: break-word;
+  line-height: 1.4;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Line-change animation */
+.typing-text.line-entering {
+  animation: lineSlideIn 0.25s ease-out;
+}
+
+@keyframes lineSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .typing-text span {

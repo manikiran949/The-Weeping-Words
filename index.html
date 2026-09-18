@@ -49,25 +49,33 @@
 
       <!-- SCREEN: GAME (HUD) -->
       <div id="screen-game" class="screen">
-        <!-- Top HUD -->
-        <div class="hud-top">
-          <div class="threat-meter">
-            <div class="threat-label">DEMON PROXIMITY</div>
-            <div class="threat-track">
-              <div id="threat-meter-bar" class="threat-bar"></div>
+        <!-- Threat meter bar – fixed to very top -->
+        <div class="threat-meter">
+          <div class="threat-label">DEMON PROXIMITY</div>
+          <div class="threat-track">
+            <div id="threat-meter-bar" class="threat-bar"></div>
+          </div>
+        </div>
+
+        <!-- Single-line Typing Area (top-positioned for eye tracking) -->
+        <div class="typing-wrapper">
+          <div class="typing-line-hud">
+            <span id="typing-line-label" class="line-label">1 / 1</span>
+            <div class="typing-progress-track">
+              <div id="typing-progress-bar" class="typing-progress-bar"></div>
             </div>
           </div>
+          <div id="typing-container" class="typing-text">
+            <!-- Spans injected by TypingEngine – one line at a time -->
+          </div>
+        </div>
+
+        <!-- Bottom HUD – webcam only -->
+        <div class="hud-bottom">
           <div id="game-video-container" class="video-container small">
             <!-- Webcam injected here by UIManager -->
             <canvas id="landmark-canvas-game" class="landmark-canvas"></canvas>
             <div class="rec-indicator">● REC</div>
-          </div>
-        </div>
-
-        <!-- Center Typing Area -->
-        <div class="typing-wrapper">
-          <div id="typing-container" class="typing-text">
-            <!-- Spans injected by TypingEngine -->
           </div>
         </div>
       </div>

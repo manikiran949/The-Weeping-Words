@@ -133,7 +133,7 @@ ui.btnStartGame.addEventListener('click', () => {
   // Start heartbeat and typing
   audio.startHeartbeat();
   typing.start();
-  ui.updateTypingHTML(typing.getHTML());
+  updateTypingUI();
 });
 
 // Restart logic
@@ -158,8 +158,28 @@ ui.btnRestartWin.addEventListener('click', restartGame);
 ui.btnRestartLose.addEventListener('click', restartGame);
 
 // Typing Events
-typing.onUpdate = () => {
+const typingLineLabel = document.getElementById('typing-line-label');
+const typingProgressBar = document.getElementById('typing-progress-bar');
+
+function updateTypingUI() {
   ui.updateTypingHTML(typing.getHTML());
+  // Update progress bar
+  typingProgressBar.style.width = `${(typing.getProgress() * 100).toFixed(1)}%`;
+  // Update line label
+  typingLineLabel.textContent = typing.getLineLabel();
+}
+
+typing.onUpdate = () => {
+  updateTypingUI();
+};
+
+typing.onLineChange = () => {
+  // Trigger a quick slide-in animation when the line changes
+  const container = ui.typingContainer;
+  container.classList.remove('line-entering');
+  // Force reflow so the animation re-triggers
+  void container.offsetWidth;
+  container.classList.add('line-entering');
 };
 
 typing.onCorrect = () => {
