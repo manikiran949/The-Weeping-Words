@@ -98,9 +98,40 @@ button {
 
 .subtitle {
   font-size: 1.2rem;
-  color: #888;
-  margin-bottom: 3rem;
-  letter-spacing: 0.1em;
+  color: var(--color-accent);
+  letter-spacing: 0.15em;
+  margin-bottom: 2rem;
+}
+
+.intro-instructions {
+  max-width: 550px;
+  text-align: left;
+  margin: 0 auto 2.5rem auto;
+  padding: 1.2rem;
+  background: rgba(15, 0, 0, 0.7);
+  border: 1px solid #4a0000;
+  border-radius: 4px;
+  box-shadow: 0 0 15px rgba(255, 0, 51, 0.1);
+}
+
+.intro-instructions ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.intro-instructions li {
+  margin-bottom: 0.8rem;
+  font-size: 0.95rem;
+  color: #ddd;
+  line-height: 1.4;
+}
+
+.intro-instructions li strong {
+  color: var(--color-accent);
+}
+
+.intro-instructions li:last-child {
+  margin-bottom: 0;
 }
 
 /* --- Buttons --- */
