@@ -94,6 +94,13 @@ button {
   margin-bottom: 1rem;
   text-shadow: 0 0 20px rgba(255, 0, 51, 0.5);
   text-transform: uppercase;
+  animation: floatTitle 4s ease-in-out infinite;
+}
+
+@keyframes floatTitle {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+  100% { transform: translateY(0); }
 }
 
 .subtitle {
@@ -147,13 +154,26 @@ button {
   cursor: pointer;
   letter-spacing: 0.1em;
   transition: all 0.2s ease;
-  box-shadow: 0 0 10px rgba(255, 0, 51, 0.2) inset;
+  animation: pulseButton 2s infinite alternate ease-in-out;
+}
+
+@keyframes pulseButton {
+  0% {
+    box-shadow: 0 0 5px rgba(255, 0, 51, 0.2) inset, 0 0 5px rgba(255, 0, 51, 0.1);
+    transform: scale(1);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(255, 0, 51, 0.6) inset, 0 0 15px rgba(255, 0, 51, 0.5);
+    transform: scale(1.05);
+  }
 }
 
 .btn-primary:hover:not(:disabled) {
+  animation-play-state: paused;
   background: var(--color-accent);
   color: #000;
-  box-shadow: 0 0 20px rgba(255, 0, 51, 0.6);
+  box-shadow: 0 0 30px rgba(255, 0, 51, 0.8) !important;
+  transform: scale(1.1) !important;
 }
 
 .btn-primary:disabled {
