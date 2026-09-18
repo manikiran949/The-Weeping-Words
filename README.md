@@ -81,8 +81,8 @@ Any of these will unfreeze the demon. A real-time telemetry HUD shows you exactl
 
 ```bash
 # Clone the repo
-git clone https://github.com/manikiran949/gaze-lock-survival.git
-cd gaze-lock-survival
+git clone https://github.com/manikiran949/The-Weeping-Words.git
+cd The-Weeping-Words
 
 # Install dependencies
 npm install

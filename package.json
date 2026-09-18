@@ -1,8 +1,8 @@
 {
-  "name": "gaze-lock-survival",
+  "name": "the-weeping-words",
   "private": true,
   "version": "0.0.1",
-  "description": "Typing Exorcism — Phase 1: Camera + Face Tracking Prototype",
+  "description": "The Weeping Words — Phase 1: Camera + Face Tracking Prototype",
   "type": "module",
   "scripts": {
     "dev": "vite",
