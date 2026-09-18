@@ -203,6 +203,7 @@ typing.onComplete = () => {
   currentState = GAME_STATE.WIN;
   audio.stopHeartbeat();
   audio.stopAmbientDrone();
+  audio.playWin();
   ui.showScreen('win');
 };
 
@@ -361,5 +362,5 @@ function gameLoop(now) {
 
 // ─── Init ─────────────────────────────────────────────────────────
 
-console.log('[Typing Exorcism] Main loaded.');
+console.log('[The Weeping Words] Main loaded.');
 ui.showScreen('intro');

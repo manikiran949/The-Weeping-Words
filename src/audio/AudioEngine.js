@@ -59,6 +59,28 @@ export class AudioEngine {
     
     // Jumpscare
     this.sfx.jumpscare = this._createProceduralSound('sawtooth', 50, 1.0, 1.5, true);
+
+    // Win chime (major chord: C, E, G)
+    this.sfx.win = () => {
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      [523.25, 659.25, 783.99].forEach((freq, i) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.3, t + 0.1 + i * 0.15); // Stagger the chord
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 2.5);
+        
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.start(t);
+        osc.stop(t + 3.0);
+      });
+    };
   }
 
   _createProceduralSound(type, freq, duration, maxVolume, distort = false) {
@@ -91,6 +113,7 @@ export class AudioEngine {
   playError() { if (this.sfx.error) this.sfx.error(); }
   playBackspace() { if (this.sfx.backspace) this.sfx.backspace(); }
   playJumpscare() { if (this.sfx.jumpscare) this.sfx.jumpscare(); }
+  playWin() { if (this.sfx.win) this.sfx.win(); }
 
   startAmbientDrone() {
     if (this.droneGain || !this.ctx) return;

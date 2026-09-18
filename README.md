@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="banner.jpg" alt="Typing Exorcism Banner" width="100%"/>
+  <img src="banner.jpg" alt="The Weeping Words Banner" width="100%"/>
 </p>
 
-# 🕯️ Typing Exorcism
+# The Weeping Words
 
 **Don't blink. Don't look away. It moves when you're not watching.**
 
-Inspired by the **Weeping Angels** from *Doctor Who* — creatures that can only move when no one is looking at them — *Typing Exorcism* brings that terrifying concept to life using your **real webcam**.
+Inspired by the **Weeping Angels** from *Doctor Who* — creatures that can only move when no one is looking at them — *The Weeping Words* brings that terrifying concept to life using your **real webcam**.
 
 A demon is frozen in the darkness ahead. As long as you're looking at the screen, it can't move. But the moment you glance down at your keyboard, close your eyes, or look away — **it lurches closer**.
 
@@ -14,7 +14,7 @@ Your only hope? Type a Latin exorcism incantation perfectly, from memory, withou
 
 ---
 
-## 🎮 How to Play
+## How to Play
 
 1. **Grant camera access** — the game uses your webcam to track your face in real-time.
 2. **Calibrate** — look straight at the screen while the eye tracker locks onto your face.
@@ -29,24 +29,24 @@ Your only hope? Type a Latin exorcism incantation perfectly, from memory, withou
 
 The same rules apply here:
 
-- 👀 **Look away** → the demon moves closer
-- 😑 **Close your eyes** → the demon moves closer  
-- 👇 **Glance at your keyboard** → the demon moves closer
-- 👁️ **Keep watching** → the demon is frozen
+- **Look away** → the demon moves closer
+- **Close your eyes** → the demon moves closer  
+- **Glance at your keyboard** → the demon moves closer
+- **Keep watching** → the demon is frozen
 
 The twist? You have to **type an entire Latin incantation without looking at your keys**. Can you touch-type under pressure while a demon creeps toward you?
 
-### ⌨️ Controls
+### Controls
 
 | Key | Action |
 |---|---|
 | Any letter/symbol | Type the next character of the incantation |
 | `Backspace` | Correct a mistyped character (you're locked until you fix it) |
-| Your eyes 👀 | **Keep them on the screen. Always.** |
+| Your eyes | **Keep them on the screen. Always.** |
 
 ---
 
-## 👹 The Demon
+## The Demon
 
 Like a Weeping Angel frozen mid-lunge, it waits in the fog — a dark, spiky shape with pulsing red eyes. The moment you break eye contact, it moves. You'll know it's getting close because:
 
@@ -55,13 +55,13 @@ Like a Weeping Angel frozen mid-lunge, it waits in the fog — a dark, spiky sha
 - The **camera shakes** violently
 - The **threat meter** fills with blood red
 
-If it reaches you: jumpscare. Game over. **You are possessed.**
+If it reaches you: jumpscare. Then, true to Weeping Angel lore, you are struck by a **Temporal Displacement**. A rapid countdown glitches on the screen, sending your soul backward in time to a random historical era (from the 1960s to Pangaea). **You lose.**
 
 If you finish the incantation: the demon is banished. Your soul is safe... for now.
 
 ---
 
-## 🔍 How It Watches You
+## How It Watches You
 
 The game uses **MediaPipe Face Landmarker** to track three signals from your face in real-time:
 
@@ -77,7 +77,7 @@ Any of these will unfreeze the demon. A real-time telemetry HUD shows you exactl
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ```bash
 # Clone the repo
@@ -101,7 +101,7 @@ Open `http://localhost:5173` in Chrome (recommended for best webcam + WebGL perf
 
 ---
 
-## 🎨 Aesthetic
+## Aesthetic
 
 The entire game is wrapped in a **cursed VHS tape** aesthetic — because nothing says "you're about to be possessed" like a haunted videotape:
 
@@ -113,9 +113,15 @@ The entire game is wrapped in a **cursed VHS tape** aesthetic — because nothin
 
 Everything gets worse as the demon gets closer. By the time it's near, the screen is barely readable.
 
+### Procedural Soundscape
+To keep the game lightweight and dependency-free, **no external MP3/WAV files are used**. Everything is generated procedurally using the Web Audio API:
+- A creepy, low, detuned sawtooth **ambient drone** that breathes with a low-pass filter
+- A dynamic **heartbeat** that speeds up as threat increases
+- Jumpscare distortion and a triumphant C-Major chord upon winning
+
 ---
 
-## 🙏 Inspiration
+## Inspiration
 
 - **Weeping Angels** (*Doctor Who*) — the core "it moves when you're not looking" mechanic
 - **SCP-173** — the original "don't break eye contact" horror
@@ -123,6 +129,6 @@ Everything gets worse as the demon gets closer. By the time it's near, the scree
 
 ---
 
-## 📜 License
+## License
 
 MIT
