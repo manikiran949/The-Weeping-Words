@@ -98,6 +98,7 @@ ui.btnGrantCamera.addEventListener('click', async () => {
   try {
     // Must initialize audio context on user gesture
     audio.init();
+    audio.startAmbientDrone();
 
     await webcam.start();
     // Video element is already in setup-video-container (hardcoded in HTML)
@@ -142,6 +143,7 @@ const restartGame = () => {
   tracker.recalibrate();
   typing.stop();
   audio.stopHeartbeat();
+  audio.startAmbientDrone();
   scene.reset();
   currentState = GAME_STATE.SETUP;
   
@@ -200,6 +202,7 @@ typing.onBackspace = () => {
 typing.onComplete = () => {
   currentState = GAME_STATE.WIN;
   audio.stopHeartbeat();
+  audio.stopAmbientDrone();
   ui.showScreen('win');
 };
 
@@ -325,6 +328,7 @@ function gameLoop(now) {
       currentState = GAME_STATE.JUMPSCARE;
       typing.stop();
       audio.stopHeartbeat();
+      audio.stopAmbientDrone();
       audio.playJumpscare();
       scene.triggerJumpscare();
       

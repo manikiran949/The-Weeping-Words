@@ -20,11 +20,24 @@ export class AudioEngine {
     
     // SFX (using procedural generated buffers instead of external files)
     this.sfx = {};
+    
+    // Ambient Drone
+    this.droneOsc1 = null;
+    this.droneOsc2 = null;
+    this.droneFilter = null;
+    this.filterLFO = null;
+    this.lfoGain = null;
+    this.droneGain = null;
   }
 
   init() {
-    if (!this.ctx && Howler.ctx) {
-      this.ctx = Howler.ctx;
+    if (!this.ctx) {
+      if (Howler.ctx) {
+        this.ctx = Howler.ctx;
+      } else {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioContext();
+      }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
@@ -78,6 +91,74 @@ export class AudioEngine {
   playError() { if (this.sfx.error) this.sfx.error(); }
   playBackspace() { if (this.sfx.backspace) this.sfx.backspace(); }
   playJumpscare() { if (this.sfx.jumpscare) this.sfx.jumpscare(); }
+
+  startAmbientDrone() {
+    if (this.droneGain || !this.ctx) return;
+    
+    // Create oscillators for a creepy, low, evolving drone
+    this.droneOsc1 = this.ctx.createOscillator();
+    this.droneOsc2 = this.ctx.createOscillator();
+    
+    this.droneOsc1.type = 'sawtooth';
+    this.droneOsc2.type = 'sawtooth';
+    
+    // Low frequencies (A1 and slightly detuned)
+    this.droneOsc1.frequency.setValueAtTime(55, this.ctx.currentTime); 
+    this.droneOsc2.frequency.setValueAtTime(56.5, this.ctx.currentTime); 
+    
+    // Low-pass filter to muffle it
+    this.droneFilter = this.ctx.createBiquadFilter();
+    this.droneFilter.type = 'lowpass';
+    this.droneFilter.frequency.value = 150;
+    
+    // An LFO to slowly sweep the filter cutoff (makes it breathe)
+    this.filterLFO = this.ctx.createOscillator();
+    this.filterLFO.type = 'sine';
+    this.filterLFO.frequency.value = 0.1; // 10-second cycle
+    
+    this.lfoGain = this.ctx.createGain();
+    this.lfoGain.gain.value = 100;
+    
+    this.filterLFO.connect(this.lfoGain);
+    this.lfoGain.connect(this.droneFilter.frequency);
+    this.filterLFO.start();
+
+    // Gain node for volume
+    this.droneGain = this.ctx.createGain();
+    this.droneGain.gain.setValueAtTime(0, this.ctx.currentTime);
+    // Fade in slowly
+    this.droneGain.gain.linearRampToValueAtTime(0.15, this.ctx.currentTime + 3);
+    
+    this.droneOsc1.connect(this.droneFilter);
+    this.droneOsc2.connect(this.droneFilter);
+    this.droneFilter.connect(this.droneGain);
+    this.droneGain.connect(this.ctx.destination);
+    
+    this.droneOsc1.start();
+    this.droneOsc2.start();
+  }
+
+  stopAmbientDrone() {
+    if (!this.droneGain || !this.ctx) return;
+    
+    const stopTime = this.ctx.currentTime + 1.5;
+    this.droneGain.gain.linearRampToValueAtTime(0, stopTime);
+    
+    setTimeout(() => {
+      if (this.droneOsc1) {
+        this.droneOsc1.stop();
+        this.droneOsc2.stop();
+        this.filterLFO.stop();
+        this.droneGain.disconnect();
+        
+        this.droneOsc1 = null;
+        this.droneOsc2 = null;
+        this.droneFilter = null;
+        this.filterLFO = null;
+        this.droneGain = null;
+      }
+    }, 1600);
+  }
 
   startHeartbeat() {
     if (this.isPlayingHeartbeat || !this.ctx) return;
