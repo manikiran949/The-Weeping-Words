@@ -95,7 +95,7 @@ export class WeepingAngel {
 
     } else {
       // Moving — faint eerie sway while approaching
-      this.group.position.y = Math.sin(this.time * 2.5) * 0.2;
+      this.group.position.y = -5 + Math.sin(this.time * 2.5) * 0.2;
       // Faint blue flicker
       this.glowLight.intensity = 0.3 + Math.sin(this.time * 12) * 0.15;
     }
