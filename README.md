@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="banner.jpg" alt="The Weeping Words Banner" width="100%"/>
+  <img src="image.png" alt="The Weeping Words Banner" width="100%"/>
 </p>
 
 # The Weeping Words
