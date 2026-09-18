@@ -420,3 +420,84 @@ button {
   90% { transform: translate(1px, 2px) rotate(0deg); }
   100% { transform: translate(1px, -2px) rotate(-1deg); }
 }
+
+/* --- Time Displacement (Game Over) --- */
+.time-displacement {
+  text-align: center;
+  z-index: 1;
+  margin-bottom: 2rem;
+}
+
+.displacement-label {
+  font-size: 0.85rem;
+  letter-spacing: 0.25em;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  animation: flicker 0.15s infinite alternate;
+}
+
+.year-counter {
+  font-family: var(--font-display);
+  font-size: 8rem;
+  color: var(--color-accent);
+  text-shadow: 0 0 30px rgba(255, 0, 51, 0.8), 0 0 80px rgba(255, 0, 51, 0.3);
+  letter-spacing: 0.05em;
+  line-height: 1;
+  min-width: 350px;
+}
+
+.year-counter.counting {
+  animation: yearGlitch 0.08s infinite alternate;
+}
+
+.year-counter.landed {
+  animation: yearLand 0.5s ease-out;
+  color: #fff;
+  text-shadow: 0 0 40px #fff, 0 0 80px var(--color-accent);
+}
+
+.era-reveal {
+  margin-top: 1.5rem;
+  opacity: 1;
+  transition: opacity 0.8s ease;
+}
+
+.era-reveal.hidden {
+  opacity: 0;
+}
+
+.era-location {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: #ddd;
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  margin-bottom: 0.5rem;
+}
+
+.era-flavor {
+  font-size: 0.9rem;
+  color: #666;
+  font-style: italic;
+  letter-spacing: 0.05em;
+}
+
+@keyframes flicker {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+@keyframes yearGlitch {
+  0% { transform: translate(0, 0) skewX(0deg); }
+  25% { transform: translate(-2px, 1px) skewX(-1deg); }
+  50% { transform: translate(1px, -1px) skewX(0.5deg); }
+  75% { transform: translate(2px, 0px) skewX(-0.5deg); }
+  100% { transform: translate(-1px, 1px) skewX(1deg); }
+}
+
+@keyframes yearLand {
+  0% { transform: scale(1.3); opacity: 0.5; }
+  60% { transform: scale(0.95); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}

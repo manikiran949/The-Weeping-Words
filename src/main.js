@@ -203,6 +203,83 @@ typing.onComplete = () => {
   ui.showScreen('win');
 };
 
+// ─── Time Displacement Logic ──────────────────────────────────────
+const ERAS = [
+  { year: 1969, location: "LONDON, UK", flavor: "A blue box was just spotted in a back alley." },
+  { year: 1890, location: "PARIS, FRANCE", flavor: "Vincent is painting the night sky." },
+  { year: 1941, location: "LONDON, UK", flavor: "The Blitz. Keep your head down." },
+  { year: 1913, location: "FARTHINGHAM, UK", flavor: "The eve of the Great War. Strange scarecrows in the fields." },
+  { year: 1776, location: "PHILADELPHIA, USA", flavor: "A new nation is being born." },
+  { year: 1348, location: "SIENA, ITALY", flavor: "The Black Death sweeps the land. Avoid the plague doctors." },
+  { year: 79, location: "POMPEII, ROME", flavor: "Mount Vesuvius is looking rather active today." },
+  { year: -65000000, location: "PANGAEA", flavor: "Watch out for the big ones." }
+];
+
+function triggerTimeDisplacement() {
+  const counter = document.getElementById('year-counter');
+  const reveal = document.getElementById('era-reveal');
+  const locText = document.getElementById('era-location');
+  const flavorText = document.querySelector('.era-flavor');
+  const title = document.getElementById('gameover-title');
+  const restartBtn = document.getElementById('btn-restart-lose');
+  
+  // Reset UI
+  reveal.classList.add('hidden');
+  counter.classList.remove('landed');
+  counter.classList.add('counting');
+  title.style.opacity = '0';
+  restartBtn.style.opacity = '0';
+  
+  // Pick random era
+  const targetEra = ERAS[Math.floor(Math.random() * ERAS.length)];
+  let currentYear = 2026;
+  const targetYear = targetEra.year;
+  
+  // Animate year countdown
+  const duration = 2500; // ms
+  const startTime = performance.now();
+  
+  function updateYear(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1.0);
+    
+    // Ease out cubic
+    const ease = 1 - Math.pow(1 - progress, 3);
+    
+    currentYear = Math.floor(2026 - ((2026 - targetYear) * ease));
+    
+    // Format BC/BCE
+    if (currentYear < 0) {
+      counter.innerText = Math.abs(currentYear) + " BC";
+    } else {
+      counter.innerText = currentYear;
+    }
+    
+    if (progress < 1.0) {
+      requestAnimationFrame(updateYear);
+    } else {
+      // Landed
+      counter.classList.remove('counting');
+      counter.classList.add('landed');
+      
+      setTimeout(() => {
+        locText.innerText = targetEra.location;
+        flavorText.innerText = targetEra.flavor;
+        reveal.classList.remove('hidden');
+        
+        setTimeout(() => {
+          title.style.transition = "opacity 1s ease";
+          restartBtn.style.transition = "opacity 1s ease";
+          title.style.opacity = '1';
+          restartBtn.style.opacity = '1';
+        }, 1500);
+      }, 500);
+    }
+  }
+  
+  requestAnimationFrame(updateYear);
+}
+
 // ─── Main Game Loop ───────────────────────────────────────────────
 
 let lastTime = performance.now();
@@ -251,13 +328,14 @@ function gameLoop(now) {
       audio.playJumpscare();
       scene.triggerJumpscare();
       
-      // Delay final red screen so we see the lunge
+      // Delay then trigger time displacement
       setTimeout(() => {
         if (currentState === GAME_STATE.JUMPSCARE) {
           currentState = GAME_STATE.GAMEOVER;
           ui.triggerJumpscare();
           ui.showScreen('gameover');
           scene.applyCameraShake(0);
+          triggerTimeDisplacement();
         }
       }, 400);
     }

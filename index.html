@@ -87,11 +87,19 @@
         <button id="btn-restart-win" class="btn-primary">Play Again</button>
       </div>
 
-      <!-- SCREEN: GAME OVER -->
+      <!-- SCREEN: GAME OVER (Time Displacement) -->
       <div id="screen-gameover" class="screen">
         <div class="static-bg"></div>
-        <h1 class="title bloody-text">YOU ARE POSSESSED</h1>
-        <button id="btn-restart-lose" class="btn-primary">Restart</button>
+        <div class="time-displacement">
+          <p class="displacement-label">TEMPORAL DISPLACEMENT DETECTED</p>
+          <div id="year-counter" class="year-counter">2026</div>
+          <div id="era-reveal" class="era-reveal hidden">
+            <p id="era-location" class="era-location"></p>
+            <p class="era-flavor"></p>
+          </div>
+        </div>
+        <h1 class="title bloody-text" id="gameover-title" style="opacity:0">YOU LOOKED AWAY</h1>
+        <button id="btn-restart-lose" class="btn-primary" style="opacity:0">Try to Return</button>
       </div>
 
     </div>
