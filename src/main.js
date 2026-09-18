@@ -123,6 +123,13 @@ ui.btnStartGame.addEventListener('click', () => {
   currentState = GAME_STATE.PLAYING;
   threatLevel = 0.0;
   
+  // Request Fullscreen for maximum immersion
+  if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(err => {
+      console.warn(`Could not enable fullscreen: ${err.message}`);
+    });
+  }
+  
   // Move the video AND its landmark canvas to the game container
   const setupCanvas = document.getElementById('landmark-canvas-setup');
   ui.moveWebcamToGame(webcam.videoElement);
