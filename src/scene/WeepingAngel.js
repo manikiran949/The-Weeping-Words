@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import angelImgUrl from '../../image.png';
 
 /**
  * WeepingAngel.js
@@ -34,7 +35,7 @@ export class WeepingAngel {
   _buildSprite() {
     const loader = new THREE.TextureLoader();
     loader.load(
-      '/image.png',
+      angelImgUrl,
       (texture) => {
         // Preserve alpha so the background of the PNG is transparent
         texture.colorSpace = THREE.SRGBColorSpace;
